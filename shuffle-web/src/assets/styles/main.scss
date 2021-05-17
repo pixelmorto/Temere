@@ -1,0 +1,28 @@
+main {
+    max-width: 1000px;
+    width: 100%;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+
+    .chat-item{
+        width: 90%;
+        display: flex;
+        flex-direction: column;
+        height: auto;
+
+        padding-top: 15px;
+        padding-bottom: 10px;
+    }
+
+    .you {
+        align-items: flex-end;
+    }
+
+    .shuffle {
+        strong {
+            color: rgb(218, 79, 79);
+        }
+    }
+}

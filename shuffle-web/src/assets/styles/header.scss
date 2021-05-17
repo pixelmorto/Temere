@@ -1,0 +1,21 @@
+header {
+    width: 100%;
+    height: 50px;
+    background-color: #2c2f33;
+    grid-row: 1;
+    max-width: 1000px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    h1 {
+        font-size: 18px;
+        margin-left: 20px;
+    }
+
+    button {
+        margin-left: 15px;
+        margin-right: 15px;
+    }
+}
