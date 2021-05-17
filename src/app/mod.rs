@@ -10,6 +10,7 @@ pub mod lobby;
 use lobby::Lobby;
 use websocket::WsConn;
 
+
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct WsMessage(pub String);
@@ -29,9 +30,17 @@ pub struct Disconnect {
 
 #[derive(Message, Debug)]
 #[rtype(result = "()")]
-pub struct ClientActorMessage {
-    pub id: Uuid,
-    pub msg: String
+pub struct ClientActorMessage<T> {
+    pub event: T,
+    pub id: Uuid
+}
+
+
+#[derive(Debug)]
+pub enum Events {
+    Message(String),
+    Command(String),
+    None
 }
 
 #[get("/")]

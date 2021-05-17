@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 // Types
-use super::{ClientActorMessage, Connect, Disconnect, WsMessage};
+use super::{ClientActorMessage, Connect, Disconnect, Events, WsMessage};
 
 type Socket = Recipient<WsMessage>;
 
@@ -82,62 +82,75 @@ impl Handler<Connect> for Lobby {
     }
 }
 
-impl Handler<ClientActorMessage> for Lobby {
-    type Result = ();
+impl Handler<ClientActorMessage<Events>> for Lobby {
+         type Result = ();
 
-    fn handle(&mut self, request: ClientActorMessage, _: &mut Context<Self>) -> Self::Result {
-        // Em caso de comandos
-        if request.msg.starts_with("/") {
-            println!("Commando: {}", request.msg);
-            match request.msg.as_str() {
-                "/new" => {
-                    let mut room_id = Uuid::new_v4();
-
-                    for (id, member_list) in self.rooms.iter() {
-                        if member_list.len() == 1 {
-                            room_id = *id;
-                        }
-                    }
-
-                    // Create a room if not exists and add user
-                    self.rooms
-                        .entry(room_id)
-                        .or_insert_with(HashSet::new)
-                        .insert(request.id);
-
-                    self.rooms
-                        .get(&room_id)
-                        .unwrap()
-                        .iter()
-                        .filter(|conn_id| *conn_id.to_owned() != request.id)
-                        .for_each(|conn_id| {
-                            self.send_message(&json!({"joined": true}).to_string(), conn_id)
-                        });
-                    
-                    self.send_message(&json!({"connected": room_id.to_string()}).to_string(), &request.id);
-                }
-                _ => self.send_message(
-                    &json!({"inbox": {"id": "shuffle", "message": "Command not found"}})
-                        .to_string(),
-                    &request.id,
-                ),
-            }
+        fn handle(&mut self, msg: ClientActorMessage<Events>, ctx: &mut Self::Context) -> Self::Result {
+            match msg.event {
+                Events::Message(x) => {println!("Estou no handler de messagem: {}", x)},
+                Events::Command(x) => {println!("Estou no handler de comandos: {}", x)},
+                _ => println!("Cheguei no handler de events diversos")
+            } 
         }
-        // Em caso de mensagens
-        else {
-            for user in self.waiting_room.iter() {
-                if user == &request.id {
-                    self.send_message(&json!({"code" : 400, "message": "you cannot send messages in the waiting room"}).to_string(), &request.id);
-                }
-            }
-
-            for (room_id, members_list) in self.rooms.iter() {
-                if members_list.get(&request.id).is_some() {
-                    self.rooms.get(room_id).unwrap().iter().for_each(|user| {
-                        self.send_message(&json!({"inbox": {"id": request.id.to_string(), "message": request.msg.as_str()}}).to_string(), user);
-                    })
-                }
-            }
-        }
-    }
 }
+
+
+// impl Handler<ClientActorMessage> for Lobby {
+//     type Result = ();
+
+//     fn handle(&mut self, request: ClientActorMessage, _: &mut Context<Self>) -> Self::Result {
+//         // Em caso de comandos
+//         if request.msg.starts_with("/") {
+//             println!("Commando: {}", request.msg);
+//             match request.msg.as_str() {
+//                 "/new" => {
+//                     let mut room_id = Uuid::new_v4();
+
+//                     for (id, member_list) in self.rooms.iter() {
+//                         if member_list.len() == 1 {
+//                             room_id = *id;
+//                         }
+//                     }
+
+//                     // Create a room if not exists and add user
+//                     self.rooms
+//                         .entry(room_id)
+//                         .or_insert_with(HashSet::new)
+//                         .insert(request.id);
+
+//                     self.rooms
+//                         .get(&room_id)
+//                         .unwrap()
+//                         .iter()
+//                         .filter(|conn_id| *conn_id.to_owned() != request.id)
+//                         .for_each(|conn_id| {
+//                             self.send_message(&json!({"joined": true}).to_string(), conn_id)
+//                         });
+                    
+//                     self.send_message(&json!({"connected": room_id.to_string()}).to_string(), &request.id);
+//                 }
+//                 _ => self.send_message(
+//                     &json!({"inbox": {"id": "shuffle", "message": "Command not found"}})
+//                         .to_string(),
+//                     &request.id,
+//                 ),
+//             }
+//         }
+//         // Em caso de mensagens
+//         else {
+//             for user in self.waiting_room.iter() {
+//                 if user == &request.id {
+//                     self.send_message(&json!({"code" : 400, "message": "you cannot send messages in the waiting room"}).to_string(), &request.id);
+//                 }
+//             }
+
+//             for (room_id, members_list) in self.rooms.iter() {
+//                 if members_list.get(&request.id).is_some() {
+//                     self.rooms.get(room_id).unwrap().iter().for_each(|user| {
+//                         self.send_message(&json!({"inbox": {"id": request.id.to_string(), "message": request.msg.as_str()}}).to_string(), user);
+//                     })
+//                 }
+//             }
+//         }
+//     }
+// }

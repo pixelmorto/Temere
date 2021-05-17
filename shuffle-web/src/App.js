@@ -31,7 +31,6 @@ export default class App extends Component {
 
     this.handleChange = this.handleChange.bind(this);
     this.send_message = this.send_message.bind(this);
-    this.start_new_connection = this.start_new_connection.bind(this);
   }
 
   componentDidMount() {
@@ -78,22 +77,26 @@ export default class App extends Component {
 
   }
 
-  send_message(command) {
-
-    if (client.readyState === client.OPEN && command) {
-      client.send(command);
-      this.setState({ input: "" })
-      return
-    }
-
+  send_message() {
     if (client.readyState === client.OPEN && this.state.input != "") {
-      client.send(this.state.input);
-      this.setState({ input: "" })
+      let value = this.state.input;
+      if (value.substring(0, 1) === "/") {
+        client.send(JSON.stringify({ event: "command", data: value, metadata: "" }));
+        this.setState({ input: "" })
+        return
+      } else {
+        client.send(JSON.stringify({ event: "message", data: value, metadata: "" }));
+        this.setState({ input: "" })
+        return;
+      }
     }
-  }co
+  }
 
-  start_new_connection() {
-    this.send_message("/new")
+  send_command(command) {
+    if (client.readyState === client.OPEN && this.state.input != "") {
+      client.send(JSON.stringify({ event: "message", data: command, metadata: "" }));
+      return;
+    }
   }
 
   handleChange(event) {
@@ -141,7 +144,7 @@ export default class App extends Component {
           {
             !this.state.connected && (
               <div>
-                <button onClick={this.start_new_connection}>Clique aqui para <br /> Iniciar uma nova conversa</button>
+                <button onClick={() => this.send_command("new")}>Clique aqui para <br /> Iniciar uma nova conversa</button>
               </div>
             )
           }
