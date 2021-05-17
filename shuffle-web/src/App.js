@@ -41,16 +41,18 @@ export default class App extends Component {
     };
 
     client.onmessage = (message) => {
+
       let data = JSON.parse(message.data);
-      console.log(data);
+      console.log(data)
 
       // If have recieved user_id
-      if (data.user_id) {
-        this.setState({ user_id: data.user_id })
+      if (data.id) {
+        console.log("id has been recieved: " + data._id)
+        this.setState({ client_id: data.id })
       }
 
       // Diz ao react que uma nova conexao foi iniciada com um usuario aleatorio
-      if (data.connected == true) {
+      if (data.connected) {
         this.setState({ connected: true });
       }
 
@@ -64,6 +66,12 @@ export default class App extends Component {
         let chat = this.state.chat;
         chat.push(data.inbox);
         this.setState({ chat })
+
+        console.log(this.state.client_id)
+        console.log(data.inbox.id)
+        if (this.state.client_id == data.inbox.id) {
+          console.log(true)
+        } else { console.log(false) }
       }
 
     };
@@ -82,7 +90,7 @@ export default class App extends Component {
       client.send(this.state.input);
       this.setState({ input: "" })
     }
-  }
+  }co
 
   start_new_connection() {
     this.send_message("/new")
@@ -107,15 +115,14 @@ export default class App extends Component {
         </header>
         {/* Main chat */}
         <main>
-          {this.state.chat.map((item) => {
-            console.log(item.id)
+          {this.state.chat.map((item, i) => {
             if (item.id === "shuffle") {
-              return (<div className="chat-item shuffle">
+              return (<div className="chat-item shuffle" key={i}>
                 <p><strong>Shuffle </strong>{item.message}</p>
               </div>)
-            } else if (item.id === "batata") {
+            } else if (item.id === this.state.client_id) {
               return (
-                <div className="chat-item you">
+                <div className="chat-item you" key={i}>
                   <span><strong>Voce</strong></span>
                   <p>{item.message}</p>
                 </div>
@@ -123,13 +130,13 @@ export default class App extends Component {
             }
             else {
               return (
-                <div className="chat-item">
+                <div className="chat-item" key={i}>
                   <span><strong>Anonimo</strong></span>
                   <p>{item.message}</p>
                 </div>
               )
             }
-          })}
+          }).reverse()}
 
           {
             !this.state.connected && (
