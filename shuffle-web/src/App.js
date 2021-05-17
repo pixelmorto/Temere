@@ -13,6 +13,7 @@ import Button from './components/Button';
 import { ReactComponent as SendIcon } from './assets/icons/send.svg';
 import { ReactComponent as CloseIcon } from './assets/icons/close.svg';
 import { Component } from "react";
+import Chat from "./components/Chat";
 
 const client = new W3CWebSocket('ws://localhost:8080/');
 
@@ -22,11 +23,16 @@ export default class App extends Component {
     super(props);
 
     this.state = {
+      id: null,
+      wsConn: new W3CWebSocket('ws://localhost:8080/'),
+      anonymous_id: null,
+      chat: [],
+
+      //
       ready: false, // Identifica se servidor conectou ou nao
       connected: true, // Identifica se o servidor iniciou uma nova conexao
       client_id: null,
       input: "",
-      chat: []
     }
 
     this.handleChange = this.handleChange.bind(this);
@@ -34,20 +40,24 @@ export default class App extends Component {
   }
 
   componentDidMount() {
-    client.onopen = () => {
-      console.log('WebSocket Client Connected');
-      this.setState({ ready: true });
-    };
-
-    client.onmessage = (message) => {
+    this.state.wsConn.onmessage = (message) => {
 
       let data = JSON.parse(message.data);
       console.log(data)
 
-      // If have recieved user_id
-      if (data.id) {
-        console.log("id has been recieved: " + data._id)
-        this.setState({ client_id: data.id })
+
+      switch (data.event) {
+        case "connected":
+          this.setState({ id: data.id });
+          console.log("You received a random identification \nYour id is: " + this.state.id);
+          break;
+        case "inbox":
+          let temp_chat = this.state.chat;
+          temp_chat.push(data.data)
+          this.setState({chat: temp_chat})
+          break;
+        default:
+          break;
       }
 
       // Diz ao react que uma nova conexao foi iniciada com um usuario aleatorio
@@ -81,11 +91,11 @@ export default class App extends Component {
     if (client.readyState === client.OPEN && this.state.input != "") {
       let value = this.state.input;
       if (value.substring(0, 1) === "/") {
-        client.send(JSON.stringify({ event: "command", data: value, metadata: "" }));
+        this.state.wsConn.send(JSON.stringify({ event: "command", data: value, metadata: "" }));
         this.setState({ input: "" })
         return
       } else {
-        client.send(JSON.stringify({ event: "message", data: value, metadata: "" }));
+        this.state.wsConn.send(JSON.stringify({ event: "message", data: value, metadata: "" }));
         this.setState({ input: "" })
         return;
       }
@@ -94,7 +104,7 @@ export default class App extends Component {
 
   send_command(command) {
     if (client.readyState === client.OPEN && this.state.input != "") {
-      client.send(JSON.stringify({ event: "message", data: command, metadata: "" }));
+      this.state.wsConn.send(JSON.stringify({ event: "message", data: command, metadata: "" }));
       return;
     }
   }
@@ -117,38 +127,7 @@ export default class App extends Component {
           </Button>
         </header>
         {/* Main chat */}
-        <main>
-          {this.state.chat.map((item, i) => {
-            if (item.id === "shuffle") {
-              return (<div className="chat-item shuffle" key={i}>
-                <p><strong>Shuffle </strong>{item.message}</p>
-              </div>)
-            } else if (item.id === this.state.client_id) {
-              return (
-                <div className="chat-item you" key={i}>
-                  <span><strong>Voce</strong></span>
-                  <p>{item.message}</p>
-                </div>
-              )
-            }
-            else {
-              return (
-                <div className="chat-item" key={i}>
-                  <span><strong>Anonimo</strong></span>
-                  <p>{item.message}</p>
-                </div>
-              )
-            }
-          }).reverse()}
-
-          {
-            !this.state.connected && (
-              <div>
-                <button onClick={() => this.send_command("new")}>Clique aqui para <br /> Iniciar uma nova conversa</button>
-              </div>
-            )
-          }
-        </main>
+        <Chat itens={this.state.chat} you={this.state.id}/>
 
         {/* Footer */}
         <footer>

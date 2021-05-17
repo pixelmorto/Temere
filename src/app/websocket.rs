@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-use crate::app::{Events};
+use crate::app::Events;
 
 use super::lobby::Lobby;
 use super::{ClientActorMessage, Connect, Disconnect, WsMessage};
@@ -87,35 +87,31 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsConn {
             }
             Ok(ws::Message::Nop) => (),
             Ok(Text(s)) => {
-                let request_validation: Result<Request, serde_json::Error> = serde_json::from_str(s.as_str());
+                let request_validation: Result<Request, serde_json::Error> =
+                    serde_json::from_str(s.as_str());
 
-                if let Ok(request) = &request_validation {
-                    match request.event.as_str() {
-                        "message" => {
-                            self.lobby_addr.do_send(ClientActorMessage{event:Events::Message(s), id: self.id})
-                        },
-                        "command" => {
-                            self.lobby_addr.do_send(ClientActorMessage{event: Events::Command(s), id: self.id})
-                        }
-                        _ => ()
-                    }
-                };
-
-                if let Err(_) =  &request_validation { 
-                    ctx.text(
+                match request_validation {
+                    Ok(req) => match req.event.as_str() {
+                        "message" => self.lobby_addr.do_send(ClientActorMessage {
+                            event: Events::Message(req.data),
+                            id: self.id,
+                        }),
+                        "command" => self.lobby_addr.do_send(ClientActorMessage {
+                            event: Events::Command(req.data),
+                            id: self.id,
+                        }),
+                        _ => (),
+                    },
+                    Err(_) => ctx.text(
                         serde_json::to_string(&Request {
                             event: "error".to_string(),
                             data: "400".to_string(),
                             metadata: "".to_string(),
                         })
                         .unwrap(),
-                    )
+                    ),
                 }
 
-                // self.lobby_addr.do_send(ClientActorMessage {
-                // event: event_type,
-                // id: self.id,
-                // msg: s,})
             }
             Err(e) => panic!("{}", e),
         }
@@ -127,7 +123,6 @@ impl Handler<WsMessage> for WsConn {
 
     fn handle(&mut self, msg: WsMessage, ctx: &mut Self::Context) {
         ctx.text(&msg.0);
-        println!("{:?}", msg.0);
     }
 }
 

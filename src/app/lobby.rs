@@ -15,7 +15,7 @@ type Socket = Recipient<WsMessage>;
 pub struct Lobby {
     sessions: HashMap<Uuid, Socket>,
     rooms: HashMap<Uuid, HashSet<Uuid>>,
-    waiting_room: Vec<Uuid>,
+    waiting_room: HashSet<Uuid>,
 }
 
 impl Actor for Lobby {
@@ -27,7 +27,7 @@ impl Default for Lobby {
         Lobby {
             sessions: HashMap::new(),
             rooms: HashMap::new(),
-            waiting_room: Vec::new(),
+            waiting_room: HashSet::new(),
         }
     }
 }
@@ -71,29 +71,70 @@ impl Handler<Connect> for Lobby {
     type Result = ();
 
     fn handle(&mut self, msg: Connect, ctx: &mut Self::Context) -> Self::Result {
-        self.waiting_room.push(msg.self_id);
+        self.waiting_room.insert(msg.self_id);
 
         self.sessions.insert(msg.self_id, msg.addr);
 
         self.send_message(
-            &json!({"status": "connected", "id": msg.self_id.to_string()}).to_string(),
+            &json!({"event": "connected", "id": msg.self_id.to_string()}).to_string(),
             &msg.self_id,
         );
     }
 }
 
 impl Handler<ClientActorMessage<Events>> for Lobby {
-         type Result = ();
+    type Result = ();
 
-        fn handle(&mut self, msg: ClientActorMessage<Events>, ctx: &mut Self::Context) -> Self::Result {
-            match msg.event {
-                Events::Message(x) => {println!("Estou no handler de messagem: {}", x)},
-                Events::Command(x) => {println!("Estou no handler de comandos: {}", x)},
-                _ => println!("Cheguei no handler de events diversos")
-            } 
+    fn handle(&mut self, msg: ClientActorMessage<Events>, ctx: &mut Self::Context) -> Self::Result {
+        match &msg.event {
+            // Wen lobby recieve messages
+            Events::Message(x) => {
+                if self.waiting_room.get(&msg.id).is_some() {
+                    self.send_message(&json!({"event": "error", "data": "You need to leave the waiting room to send a message!", "metadata": ""}).to_string(), &msg.id);
+                    return;
+                }
+
+                for (id, member_list) in self.rooms.iter() {
+                    if member_list.get(&msg.id).is_some() {
+                        self.rooms.get(id).unwrap().iter().for_each(|user| {
+                            self.send_message(
+                                &json!({"event": "inbox", "data": {"sender": &msg.id, "message": x}, "metadata": ""}).to_string(),
+                                user,
+                            )
+                        })
+                    }
+                }
+            }
+            Events::Command(x) => {
+                match x.as_str() {
+                    "/new" => {
+                        let mut room_id = Uuid::new_v4();
+
+                        for (id, member_list) in self.rooms.iter() {
+                            if member_list.len() == 1 {
+                                room_id = *id;
+                            }
+                        }
+
+                        // Create a room if not exists and add user
+                        self.rooms
+                            .entry(room_id.clone())
+                            .or_insert_with(HashSet::new)
+                            .insert(msg.id);
+
+                        self.waiting_room.remove(&msg.id);
+
+                        self.send_message(&json!({"event": "onRoonStarted", "room_id": room_id.to_string()}).to_string(), &msg.id);
+                    },
+                    _ => {
+                        self.send_message(&json!({"event": "inbox", "data": {"sender": "server", "message": "Command not exists"}, "metadata": ""}).to_string(), &msg.id)
+                    }
+                }
+            }
+            _ => println!("Cheguei no handler de events diversos"),
         }
+    }
 }
-
 
 // impl Handler<ClientActorMessage> for Lobby {
 //     type Result = ();
@@ -126,7 +167,7 @@ impl Handler<ClientActorMessage<Events>> for Lobby {
 //                         .for_each(|conn_id| {
 //                             self.send_message(&json!({"joined": true}).to_string(), conn_id)
 //                         });
-                    
+
 //                     self.send_message(&json!({"connected": room_id.to_string()}).to_string(), &request.id);
 //                 }
 //                 _ => self.send_message(

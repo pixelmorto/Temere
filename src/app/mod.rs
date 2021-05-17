@@ -40,6 +40,8 @@ pub struct ClientActorMessage<T> {
 pub enum Events {
     Message(String),
     Command(String),
+    Jump,
+    Start,
     None
 }
 
