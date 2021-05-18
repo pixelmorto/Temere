@@ -113,6 +113,12 @@ export default class App extends Component {
     this.setState({ input: event.target.value })
   }
 
+  handleKeyPress = (event) => {
+    if(event.key === 'Enter'){
+      this.send_message()
+    }
+  }
+
   render() {
     return (
       <div className="App">
@@ -133,7 +139,7 @@ export default class App extends Component {
           <div className="section two-section">
             {/*If you not connected in a room you cant send message*/}
             {this.state.connected ?
-              <input type="text" placeholder="Digite sua mensagem" value={this.state.input} onChange={this.handleChange} /> :
+              <input type="text" placeholder="Digite sua mensagem" value={this.state.input} onChange={this.handleChange} onKeyDown={this.handleKeyPress} /> :
               <input type="text" placeholder="Voce precisa iniciar um chat para mandar mensagens..." value={this.state.input} disabled />
             }
           </div>
