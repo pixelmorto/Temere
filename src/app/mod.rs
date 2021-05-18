@@ -3,6 +3,7 @@ use actix::Addr;
 use actix_web::{get, web::Data, web::Path, web::Payload, Error, HttpResponse, HttpRequest};
 use actix_web_actors::ws;
 use uuid::Uuid;
+use serde::{Deserialize, Serialize};
 
 pub mod websocket;
 pub mod lobby;
@@ -40,8 +41,6 @@ pub struct ClientActorMessage<T> {
 pub enum Events {
     Message(String),
     Command(String),
-    Jump,
-    Start,
     None
 }
 

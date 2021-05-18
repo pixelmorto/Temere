@@ -117,11 +117,8 @@ export default class App extends Component {
     return (
       <div className="App">
         <header>
+          <p>Oi</p>
           <h1>Shuffle</h1>
-          {
-            this.state.ready ?
-              <p>Pronto para iniciar</p> : <p>Conectando com o Servidor...</p>
-          }
           <Button>
             <CloseIcon />
           </Button>

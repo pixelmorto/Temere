@@ -58,7 +58,7 @@ impl Handler<Disconnect> for Lobby {
                         .filter(|conn_id| *conn_id.to_owned() != msg.id)
                         .for_each(|user_id| {
                             self.send_message(&format!("{} disconnected.", &msg.id), user_id);
-                            //self.waiting_room.push(*user_id);
+                            //self.waiting_room.insert(*user_id);
                             //self.rooms.remove(room_id);
                         });
                 }
