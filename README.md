@@ -8,4 +8,13 @@
 
 ![Temere](./images/img-01.png)
 
-<p align="justify"> Little random chat application write in Rust. </p>
+<p align="center"> Little random chat application write in Rust and Actix. </p>
+
+## Goals
+- [ ] accounts(optional)
+- [ ] Send Videos
+- [ ] Send Audios
+- [ ] Send images
+- [ ] Change nick
+- [ ] Random chat
+- [ ] Basic chat
